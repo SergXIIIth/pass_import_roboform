@@ -14,24 +14,40 @@ class Login
   attr_accessor :raw
 
   def ask_required_info
-    self.key = ask('Key is empty. Please type pass key:') if blank?(key)
+    ask!(:key) if blank?(key)
     find_password!
-    self.password = ask('Password is empty. Please type password:') if blank?(password)
+    if blank?(password)
+      ask!(:password)
+      puts ''
+    end
   end
 
   def save
-    raise if blank?(key) || blank?(password)
+
   end
 
   private
 
-  def find_password
+  def find_password!
+    fields.each do |key, val|
+      key = key.downcase
+      if key.include?('password') || key.include?('pwd') || key.include?('pass')
+        self.password = val
+      end
+    end
+  end
+
+  def ask!(field)
+    puts self.inspect
+    print "#{field} is empty. Please type #{field}: "
+    self.send("#{field}=", gets.chomp)
   end
 
   def blank?(str)
-    str.strip.empty?
+    !str || str.strip.empty?
   end
 end
+
 
 print_list_dir = ARGV.pop
 unless print_list_dir
@@ -47,24 +63,29 @@ end
 
 html_logins = Nokogiri::HTML(File.open(logins_path))
 
-html_logins.css('table tr').each do |tr|
+html_logins.css('table').each do |table|
   login = Login.new
-  caption = tr.at_css('.caption')
-  subcaption = tr.at_css('.subcaption')
-  key = tr.at_css('.field')
 
-  if caption
-    login.key = caption.text()
-  elsif subcaption
-    login.url = subcaption.text()
-  elsif key
-    login.fields[key.text()] = tr.at_css('.wordbreakfield').text()
-  else
-    login.raw << tr.at_css('.wordbreakfield').text()
+  table.css('tr').each do |tr|
+    caption = tr.at_css('.caption')
+    subcaption = tr.at_css('.subcaption')
+    key = tr.at_css('.field')
+
+    if caption
+      login.key = caption.text()
+    elsif subcaption
+      login.url = subcaption.text()
+    elsif key
+      login.fields[key.text()] = tr.at_css('.wordbreakfield').text()
+    else
+      login.raw << tr.at_css('.wordbreakfield').text()
+    end
   end
 
-  login.ask_required_info
-  login.save
+  if login.fields.any?
+    login.ask_required_info
+    login.save
+  end
 end
 
 
