@@ -38,13 +38,52 @@ class Login
   end
 
   def ask!(field)
-    puts self.inspect
-    print "#{field} is empty. Please type #{field}: "
+    puts Colorize.red("#{field.capitalize} is empty for login:")
+    print_self
+    print Colorize.green "Please type #{field}: "
     self.send("#{field}=", gets.chomp)
+  end
+
+  def print_self
+    puts Colorize.yellow "\tKey:\t#{key}" if present?(key)
+    puts Colorize.yellow "\tPassword:\t#{password}" if present?(password)
+    puts Colorize.yellow "\tUrl:\t#{url}" if present?(url)
+    puts Colorize.yellow "\tFields:\t#{fields}" if fields.any?
+    puts Colorize.yellow "\tRaw:\t#{raw}" if raw.any?
   end
 
   def blank?(str)
     !str || str.strip.empty?
+  end
+
+  def present?(str)
+    !blank?(str)
+  end
+end
+
+class Colorize
+  class << self
+    def red(mes)
+      colorize(31, mes)
+    end
+
+    def green(mes)
+      colorize(32, mes)
+    end
+
+    def yellow(mes)
+      colorize(33, mes)
+    end
+
+    def pink(mes)
+      colorize(35, mes)
+    end
+
+    private
+
+    def colorize(color_code, mes)
+      "\e[#{color_code}m#{mes}\e[0m"
+    end
   end
 end
 
