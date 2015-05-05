@@ -23,10 +23,25 @@ class Login
   end
 
   def save
+    if valid?
+      IO.popen("pass insert -m 'roboform/#{key.downcase}' > /dev/null", "w") do |pass_io|
+        pass_io.puts password
+        if options.meta
+          pass_io.puts "Url: #{url}" if present?(url)
+          pass_io.puts "Fields: #{fields}" if fields.any?
+          pass_io.puts "Notes: #{raw}" if raw.any?
+        end
+      end
 
+      $? == 0
+    end
   end
 
   private
+
+  def valid?
+    present?(key) && present?(password)
+  end
 
   def find_password!
     fields.each do |key, val|
@@ -102,6 +117,7 @@ end
 
 html_logins = Nokogiri::HTML(File.open(logins_path))
 
+saved_logins = 0
 html_logins.css('table').each do |table|
   login = Login.new
 
@@ -123,8 +139,12 @@ html_logins.css('table').each do |table|
 
   if login.fields.any?
     login.ask_required_info
-    login.save
+    if login.save
+      saved_logins += 1
+    end
   end
+
+  puts "Imported passwords: #{saved_logins}"
 end
 
 
