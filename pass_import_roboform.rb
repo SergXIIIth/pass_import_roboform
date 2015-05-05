@@ -24,13 +24,11 @@ class Login
 
   def save
     if valid?
-      IO.popen("pass insert -m 'roboform/#{key.downcase}' > /dev/null", "w") do |pass_io|
+      IO.popen("pass insert -m -f '#{path}' > /dev/null", "w") do |pass_io|
         pass_io.puts password
-        if options.meta
-          pass_io.puts "Url: #{url}" if present?(url)
-          pass_io.puts "Fields: #{fields}" if fields.any?
-          pass_io.puts "Notes: #{raw}" if raw.any?
-        end
+        pass_io.puts "Url: #{url}" if present?(url)
+        pass_io.puts "Fields: #{fields}" if fields.any?
+        pass_io.puts "Notes: #{raw}" if raw.any?
       end
 
       $? == 0
@@ -38,6 +36,11 @@ class Login
   end
 
   private
+
+  def path
+    key = self.key.downcase.gsub(/[^\w\.\/]/, '_').gsub(/_{2,}/, '_')
+    "roboform/#{key}"
+  end
 
   def valid?
     present?(key) && present?(password)
@@ -118,6 +121,7 @@ end
 html_logins = Nokogiri::HTML(File.open(logins_path))
 
 saved_logins = 0
+
 html_logins.css('table').each do |table|
   login = Login.new
 
@@ -143,8 +147,8 @@ html_logins.css('table').each do |table|
       saved_logins += 1
     end
   end
-
-  puts "Imported passwords: #{saved_logins}"
 end
+
+puts "Imported passwords: #{saved_logins}"
 
 
